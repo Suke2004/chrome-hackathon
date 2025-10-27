@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SuperBook Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="settings-container">
+      <div class="header">
+        <div class="logo">📚 SuperBook</div>
+        <h1>Settings</h1>
+      </div>
+
+      <div class="settings-section">
+        <h2>🔑 API Configuration</h2>
+        <p class="description">
+          Enter your Google Gemini API key to enable AI-powered contextual
+          definitions.
+        </p>
+
+        <div class="input-group">
+          <label for="geminiApiKey">Gemini API Key</label>
+          <input
+            type="password"
+            id="geminiApiKey"
+            placeholder="Enter your API key"
+            autocomplete="off" />
+          <p class="help-text">
+            Get your API key from
+            <a
+              href="https://makersuite.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Google AI Studio</a
+            >
+          </p>
+        </div>
+
+        <div class="input-group">
+          <label for="geminiModel">Gemini Model</label>
+          <select id="geminiModel" class="model-select">
+            <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
+            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+          </select>
+          <p class="help-text">
+            Choose the AI model. gemini-2.5-flash-lite is recommended for fast,
+            accurate contextual definitions.
+          </p>
+        </div>
+
+        <div class="button-group">
+          <button id="saveBtn" class="btn-primary">Save Settings</button>
+          <button id="testBtn" class="btn-secondary">Test API Key</button>
+        </div>
+
+        <div id="statusMessage" class="status-message"></div>
+      </div>
+
+      <div class="settings-section">
+        <h2>🤖 AI Mode</h2>
+        <div class="toggle-group">
+          <label class="switch">
+            <input type="checkbox" id="aiModeToggle" />
+            <span class="slider"></span>
+          </label>
+          <div>
+            <div class="toggle-label">Enable AI Contextual Meanings</div>
+            <div class="toggle-description">
+              When enabled, SuperBook uses AI to provide contextual definitions
+              based on the surrounding text.
+            </div>
+          </div>
+        </div>
+
+        <div class="input-group" style="margin-top: 20px;">
+          <label for="contextSize">Context Window Size</label>
+          <select id="contextSize" class="model-select">
+            <option value="small">Small (1-2 sentences)</option>
+            <option value="medium" selected>Medium (paragraph, recommended)</option>
+            <option value="large">Large (2-3 paragraphs)</option>
+            <option value="auto">Auto (intelligent selection)</option>
+          </select>
+          <p class="help-text">
+            Control how much surrounding text is analyzed for AI contextual meanings.
+          </p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>🎨 Appearance</h2>
+        <div class="input-group">
+          <label for="tooltipTheme">Tooltip Theme</label>
+          <select id="tooltipTheme" class="model-select">
+            <option value="dark" selected>Dark</option>
+            <option value="light">Light</option>
+            <option value="auto">Auto (match page)</option>
+          </select>
+          <p class="help-text">Choose the tooltip color scheme.</p>
+        </div>
+
+        <div class="input-group">
+          <label for="tooltipSize">Tooltip Size</label>
+          <select id="tooltipSize" class="model-select">
+            <option value="small">Small (280px)</option>
+            <option value="medium" selected>Medium (340px, recommended)</option>
+            <option value="large">Large (400px)</option>
+          </select>
+          <p class="help-text">Adjust the maximum width of tooltips.</p>
+        </div>
+
+        <div class="input-group">
+          <label for="fontSize">Font Size</label>
+          <select id="fontSize" class="model-select">
+            <option value="small">Small (12px)</option>
+            <option value="medium" selected>Medium (14px, recommended)</option>
+            <option value="large">Large (16px)</option>
+          </select>
+          <p class="help-text">Control the text size in tooltips.</p>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <h2>ℹ️ About</h2>
+        <p class="description">
+          SuperBook uses the Google Gemini API to provide AI-powered contextual
+          word definitions. Your API key is stored locally and never shared with
+          third parties.
+        </p>
+        <p class="description">
+          <strong>Privacy:</strong> Your API key is stored in Chrome's local
+          storage and is only used to make requests to Google's Gemini API.
+        </p>
+      </div>
+
+      <div class="footer">
+        <p>Version 1.0.0 | Made with ❤️</p>
+      </div>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
