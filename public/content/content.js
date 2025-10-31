@@ -52,6 +52,9 @@ function initializeSuperBook() {
     });
   } catch (_) {}
 
+  // Inject minimal terminal styles for tooltips into the host page
+  injectTerminalStyles();
+
   try {
     chrome.runtime.onMessage.addListener((message) => {
       if (message && message.action === "toggleExtension") {
@@ -67,6 +70,39 @@ function initializeSuperBook() {
       }
     });
   } catch (_) {}
+}
+
+function injectTerminalStyles() {
+  if (document.getElementById("superbook-terminal-styles")) return;
+  const style = document.createElement("style");
+  style.id = "superbook-terminal-styles";
+  style.textContent = `
+    .terminal-tooltip .terminal-loading-dots::after { content: ''; display:inline-block; animation: dots 1s steps(3,end) infinite; width: 1.2em; }
+    @keyframes dots { 0%,20% { content: ''; } 40% { content: '.';} 60% { content: '..'; } 80%,100% { content: '...'; } }
+    .terminal-tooltip { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace; }
+    .superbook-terminal-window { background:#071018;border-radius:6px;padding:8px;margin-top:8px;border:1px solid rgba(74,222,128,0.06); }
+    .superbook-terminal-header { display:flex;align-items:center;gap:8px;padding:4px 6px 8px 6px; }
+    .superbook-terminal-header .dot { width:10px;height:10px;border-radius:50%; }
+    .superbook-terminal-header .dot.red { background:#ef4444 }
+    .superbook-terminal-header .dot.yellow { background:#f59e0b }
+    .superbook-terminal-header .dot.green { background:#4ade80 }
+    .superbook-terminal-body { background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0)); padding:8px;border-radius:4px;margin-top:6px;color:#d1d5db;font-size:13px;line-height:1.5 }
+    /* Popup-like terminal card */
+    .superbook-terminal-card { background: #0b1220; border-radius: 12px; padding: 8px; box-shadow: 0 10px 30px rgba(2,6,23,0.6); border: 1px solid rgba(255,255,255,0.02); font-family: 'Fira Code', 'Courier New', monospace; }
+    .superbook-terminal-card .card-header { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.02); }
+    .terminal-dots { display:flex; gap:6px; align-items:center; }
+    .terminal-dot { width:10px; height:10px; border-radius:50%; }
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27ca3f; }
+    .terminal-title { font-size: 13px; color: #9aa2b1; font-weight: 500; }
+    .superbook-terminal-badge { background: rgba(34,197,94,0.08); color: #4ade80; padding:6px 10px; border-radius:8px; font-weight:700; font-size:12px; display:inline-flex; gap:8px; align-items:center; }
+    .superbook-terminal-inner { margin:10px;padding:12px;border-radius:8px;background:#071018;border:1px solid rgba(74,222,128,0.08); }
+    .superbook-terminal-inner p { margin:0;color:#d1d5db }
+    .superbook-terminal-word { font-weight:700;color:#93f9b9;margin-bottom:6px }
+    .superbook-terminal-subtle { color:#9ca3af;font-size:13px }
+  `;
+  document.head.appendChild(style);
 }
 
 function loadSettings() {
@@ -391,81 +427,110 @@ async function showTooltip(word, position) {
   const tooltipWidth = tooltipWidths[tooltipSize] || 340;
 
   tooltipEl = document.createElement("div");
-  tooltipEl.className = "superbook-tooltip";
+  tooltipEl.className = "superbook-tooltip terminal-tooltip";
+  // Terminal-style positioning
   tooltipEl.style.left = `${Math.min(
     position.x + 8,
     window.scrollX + document.documentElement.clientWidth - tooltipWidth
   )}px`;
   tooltipEl.style.top = `${Math.max(position.y - 8, window.scrollY + 8)}px`;
 
-  // Apply customizable font size
+  // Apply customizable font size (we'll use monospace terminal look)
   const fontSizes = {
     small: "12px",
-    medium: "14px",
-    large: "16px",
+    medium: "13px",
+    large: "15px",
   };
-  tooltipEl.style.fontSize = fontSizes[fontSize] || "14px";
+  tooltipEl.style.fontSize = fontSizes[fontSize] || "13px";
 
-  // Apply theme
-  if (tooltipTheme === "light") {
-    tooltipEl.classList.add("superbook-tooltip-light");
-  }
+  // Basic inline terminal styles to avoid external CSS dependency
+  tooltipEl.style.cssText += `;color: #e5e7eb; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace; width: ${tooltipWidth}px; z-index: 2147483647;`;
+
+  // Build popup-like terminal card structure
+  const card = document.createElement("div");
+  card.className = "superbook-terminal-card";
+
+  const header = document.createElement("div");
+  header.className = "card-header";
+
+  const dots = document.createElement("div");
+  dots.className = "terminal-dots";
+  const d1 = document.createElement("span");
+  d1.className = "terminal-dot red";
+  const d2 = document.createElement("span");
+  d2.className = "terminal-dot yellow";
+  const d3 = document.createElement("span");
+  d3.className = "terminal-dot green";
+  dots.appendChild(d1);
+  dots.appendChild(d2);
+  dots.appendChild(d3);
+
+  const title = document.createElement("div");
+  title.className = "terminal-title";
+  title.textContent = "Dictionary Terminal";
+
+  const badge = document.createElement("div");
+  badge.className = "superbook-terminal-badge";
+  badge.innerHTML = '<span style="font-size:14px">🤖</span><span style="margin-left:6px">AI</span>';
+
+  header.appendChild(dots);
+  header.appendChild(title);
+  header.appendChild(badge);
+  card.appendChild(header);
+
+  const inner = document.createElement("div");
+  inner.className = "superbook-terminal-inner";
 
   const content = document.createElement("div");
-  content.className = "superbook-definition";
+  content.className = "superbook-definition terminal-content";
 
-  // Check if AI mode is enabled
-  if (!aiMode || !geminiApiKey) {
-    content.innerHTML = `<div style="text-align: center; padding: 24px;">
-      <div style="font-size: 32px; margin-bottom: 12px;">🤖</div>
-      <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px; color: #4ade80;">AI Mode Required</div>
-      <div style="font-size: 13px; color: #9ca3af; line-height: 1.5;">Enable AI mode and configure your API key in settings<br/>to get AI-powered contextual meanings.</div>
-      <div style="margin-top: 12px; padding: 8px 16px; background: rgba(74, 222, 128, 0.1); border-radius: 6px; font-size: 12px; color: #4ade80; display: inline-block;">
-        Open Settings → Enable AI Mode
+  card.appendChild(inner);
+  inner.appendChild(content);
+  tooltipEl.appendChild(card);
+
+  // Loading state in terminal-like inner panel (keeps monospace look)
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#4ade80"></div>
+        <div style="color:#4ade80;font-weight:600;font-size:13px;">AI Analysis</div>
       </div>
-    </div>`;
-    tooltipEl.appendChild(content);
-    document.documentElement.appendChild(tooltipEl);
-    tooltipEl.classList.add("show");
-    return;
-  }
-
-  // Show loading state with AI branding
-  content.innerHTML = `<div style="text-align: center; padding: 24px;">
-    <div style="margin-bottom: 16px;">
-      <div class="superbook-loading" style="display: inline-block; font-size: 24px; animation: pulse 1.5s ease-in-out infinite;">🤖</div>
+      <div style="margin-left:auto;color:#9ca3af;font-size:12px;">${escapeHtml(word)}</div>
     </div>
-    <div style="font-weight: 600; font-size: 18px; margin-bottom: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-      ${escapeHtml(word)}
-    </div>
-    <div style="font-size: 13px; color: #9ca3af;">AI is analyzing the context...</div>
-  </div>`;
-  tooltipEl.appendChild(content);
+    <div style="padding-top:8px;color:#9ca3af;font-size:13px;">Analyzing context<span class="terminal-loading-dots">...</span></div>
+  `;
   document.documentElement.appendChild(tooltipEl);
   tooltipEl.classList.add("show");
 
   try {
-    // Only fetch AI contextual meaning
+    // Fetch dictionary definition (fallback) and AI explanation in parallel
+    const dictPromise = fetchDictionaryDefinition(word).catch((err) => {
+      console.warn("Dictionary fetch failed:", err);
+      return null;
+    });
+
     if (!paragraphContext) {
-      // Still try to get AI explanation even without context
       paragraphContext = `The word "${word}" appears on this page. Please provide a general explanation of what this word means and how it might be used.`;
     }
 
-    const aiMeaning = await fetchAIContextualMeaning(word, paragraphContext);
+    const aiPromise = (async () => {
+      if (!aiMode || !geminiApiKey) return null;
+      try {
+        return await fetchAIContextualMeaning(word, paragraphContext);
+      } catch (err) {
+        console.warn("AI fetch failed:", err);
+        return null;
+      }
+    })();
 
-    if (aiMeaning) {
-      // Render AI content only
-      renderAIContent(content, word, aiMeaning);
+    const [def, aiMeaning] = await Promise.all([dictPromise, aiPromise]);
+
+    // If neither source returned useful content, show friendly message
+    if (!def && !aiMeaning) {
+      content.innerHTML = `<div style="text-align: center; padding: 16px; color: #9ca3af;">Unable to fetch definition or contextual meaning. Check your connection or API key.</div>`;
     } else {
-      // AI failed but give helpful message
-      content.innerHTML = `<div style="text-align: center; padding: 24px;">
-        <div style="font-size: 24px; margin-bottom: 12px;">🤖</div>
-        <div style="font-weight: 600; margin-bottom: 6px;">Unable to analyze</div>
-        <div style="font-size: 13px; color: #9ca3af;">Check your API key and connection.</div>
-        <div style="margin-top: 12px; padding: 6px 12px; background: rgba(74, 222, 128, 0.1); border-radius: 4px; font-size: 11px; color: #4ade80; display: inline-block;">
-          Try selecting text with more context
-        </div>
-      </div>`;
+      // Render combined content: dictionary definition + AI contextual meaning (if available)
+      renderTooltipContent(content, def || {}, aiMeaning || null, word);
     }
   } catch (err) {
     console.error(err);
@@ -506,96 +571,93 @@ async function showTooltip(word, position) {
 function renderTooltipContent(content, def, aiMeaning, word) {
   content.innerHTML = "";
 
-  // Dictionary definition
-  const dictSection = document.createElement("div");
-  dictSection.className = "superbook-dict-section";
-  const parts = [];
-
-  if (def.word)
-    parts.push(`<div class="superbook-word">${escapeHtml(def.word)}</div>`);
-  if (def.phonetic)
-    parts.push(
-      `<div class="superbook-pronunciation">${escapeHtml(def.phonetic)}</div>`
-    );
-  if (def.partOfSpeech)
-    parts.push(
-      `<div class="superbook-definition"><strong>${escapeHtml(
-        def.partOfSpeech
-      )}</strong></div>`
-    );
-  if (def.definition)
-    parts.push(
-      `<div class="superbook-definition">${escapeHtml(def.definition)}</div>`
-    );
-  if (def.example)
-    parts.push(
-      `<div class="superbook-definition" style="opacity:.8;font-style:italic; margin-top: 4px;">"${escapeHtml(
-        def.example
-      )}"</div>`
-    );
-
-  dictSection.innerHTML = parts.join("");
-
-  // AI contextual meaning with enhanced styling
-  if (aiMeaning) {
-    const aiSection = document.createElement("div");
-    aiSection.className = "superbook-ai-section";
-
-    // Create AI badge
-    const aiBadge = document.createElement("div");
-    aiBadge.className = "superbook-ai-badge";
-    aiBadge.textContent = "AI Context";
-
-    // Create AI content
-    const aiContent = document.createElement("div");
-    aiContent.style.cssText =
-      "font-size: 13px; line-height: 1.6; color: #d1d5db;";
-    aiContent.textContent = aiMeaning;
-
-    aiSection.appendChild(aiBadge);
-    aiSection.appendChild(aiContent);
-
-    dictSection.appendChild(aiSection);
+  // Outer word header (matches popup)
+  if (def && def.word) {
+    const wordEl = document.createElement("div");
+    wordEl.className = "superbook-terminal-word";
+    wordEl.textContent = def.word.toUpperCase();
+    content.appendChild(wordEl);
   }
 
-  content.appendChild(dictSection);
+  // Subtle phonetic/pos line
+  const metaLine = document.createElement("div");
+  metaLine.className = "superbook-terminal-subtle";
+  const parts = [];
+  if (def && def.phonetic) parts.push(def.phonetic);
+  if (def && def.partOfSpeech) parts.push(`[${def.partOfSpeech}]`);
+  if (parts.length) metaLine.textContent = parts.join(" • ");
+  if (parts.length) content.appendChild(metaLine);
+
+  // Inner boxed panel for definition and AI content
+  const innerPanel = document.createElement("div");
+  innerPanel.className = "superbook-terminal-inner";
+
+  if (def && def.definition) {
+    const p = document.createElement("p");
+    p.textContent = def.definition;
+    innerPanel.appendChild(p);
+  }
+
+  if (def && def.example) {
+    const ex = document.createElement("p");
+    ex.style.fontStyle = "italic";
+    ex.style.opacity = "0.9";
+    ex.textContent = `"${def.example}"`;
+    innerPanel.appendChild(ex);
+  }
+
+  // Append dictionary inner panel first
+  content.appendChild(innerPanel);
+
+  // If AI meaning present, append a terminal-styled AI block below
+  if (aiMeaning) {
+    const aiTerminal = document.createElement("div");
+    aiTerminal.className = "superbook-terminal-window";
+    const header = document.createElement("div");
+    header.className = "superbook-terminal-header";
+    const r = document.createElement("div");
+    r.className = "dot red";
+    const y = document.createElement("div");
+    y.className = "dot yellow";
+    const g = document.createElement("div");
+    g.className = "dot green";
+    header.appendChild(r);
+    header.appendChild(y);
+    header.appendChild(g);
+    aiTerminal.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "superbook-terminal-body";
+    body.textContent = aiMeaning;
+    aiTerminal.appendChild(body);
+
+    content.appendChild(aiTerminal);
+  }
 }
 
 function renderAIContent(content, word, aiMeaning) {
   content.innerHTML = "";
 
-  // Main container with padding
-  const container = document.createElement("div");
-  container.style.cssText = "padding: 8px 0;";
+  // Card-like presentation for AI full content
+  const card = document.createElement("div");
+  card.className = "superbook-terminal-card";
 
-  // Word header with AI branding
-  const wordHeader = document.createElement("div");
-  wordHeader.style.cssText =
-    "margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid rgba(74, 222, 128, 0.15); position: relative;";
+  const cardHeader = document.createElement("div");
+  cardHeader.className = "card-header";
+  const badge = document.createElement("div");
+  badge.className = "superbook-terminal-badge";
+  badge.innerHTML = '<span style="font-size:14px">🤖</span><span style="margin-left:6px">AI-GENERATED CONTEXT</span>';
+  cardHeader.appendChild(badge);
+  card.appendChild(cardHeader);
 
-  const wordTitle = document.createElement("div");
-  wordTitle.className = "superbook-word";
-  wordTitle.textContent = word;
-  wordTitle.style.marginBottom = "8px";
-  wordHeader.appendChild(wordTitle);
+  const inner = document.createElement("div");
+  inner.className = "superbook-terminal-inner";
+  const p = document.createElement("p");
+  p.textContent = aiMeaning;
+  inner.appendChild(p);
+  card.appendChild(inner);
 
-  // AI badge with icon
-  const aiBadge = document.createElement("div");
-  aiBadge.className = "superbook-ai-badge";
-  aiBadge.innerHTML =
-    '<span style="margin-right: 4px;">🤖</span>AI-Generated Context';
-  wordHeader.appendChild(aiBadge);
-
-  // AI content with better styling
-  const aiContent = document.createElement("div");
-  aiContent.style.cssText =
-    "font-size: 15px; line-height: 1.8; color: #e5e7eb; padding: 12px; background: rgba(74, 222, 128, 0.05); border-radius: 8px; border-left: 3px solid rgba(74, 222, 128, 0.3);";
-  aiContent.textContent = aiMeaning;
-
-  container.appendChild(wordHeader);
-  container.appendChild(aiContent);
-
-  content.appendChild(container);
+  content.appendChild(card);
 }
 
 function escapeHtml(str) {
